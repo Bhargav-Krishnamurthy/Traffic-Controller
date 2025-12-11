@@ -1,151 +1,110 @@
-#🚦 Traffic Light Controller in Verilog
+# Traffic Light Controller (Verilog RTL + Testbench)
 
-A fully functional traffic light controller implemented in Verilog, featuring:
+This project implements a traffic light controller using Verilog, along with a tick generator and a complete testbench. The controller supports a manual extension input, allowing the user to extend the green time of the North–South direction based on a button/trigger.
 
-Direction-based light sequencing (North–South & East–West)
+This project was created for learning and academic purposes, focusing on RTL design, counters, and waveform simulation using Verilog + GTKWave.
 
-Programmable timing for each phase
+### Files in This Repository
+File	Description
+```bash
+traffic.v	Traffic light controller logic
 
-Pedestrian / vehicle extension input
+tick1s.v	Tick generator that produces periodic pulses
 
-Testbench + waveform visualization (.vcd)
+tb_traffic.v	Testbench (clock, reset, waveform dump, user extension event)
+```
+### Design Overview
 
-FPGA-friendly, synthesizable design
+The traffic system controls two directions:
 
-This project was written and tested using Icarus Verilog and GTKWave.
+North–South (NS)
 
-📌 Features
-✔ Normal traffic cycle
+East–West (EW)
 
-The controller follows a fixed timing pattern:
+At any moment, exactly one direction can have green/yellow, while the opposite direction stays red.
 
-Traffic Light Timing Pattern:
+Default Phase Timings
+Phase	Duration (ticks)	Lights
+NS Green	10	NS = Green, EW = Red
+NS Yellow	3	NS = Yellow, EW = Red
+EW Green	10	EW = Green, NS = Red
+EW Yellow	3	EW = Yellow, NS = Red
 
-Phase 1: North–South Green
-Duration: 10 seconds
-North–South Lights: Green ON, Yellow OFF, Red OFF
-East–West Lights:   Green OFF, Yellow OFF, Red ON
-
-Phase 2: North–South Yellow
-Duration: 3 seconds
-North–South Lights: Green OFF, Yellow ON, Red OFF
-East–West Lights:   Green OFF, Yellow OFF, Red ON
-
-Phase 3: East–West Green
-Duration: 10 seconds
-North–South Lights: Green OFF, Yellow OFF, Red ON
-East–West Lights:   Green ON, Yellow OFF, Red OFF
-
-Phase 4: East–West Yellow
-Duration: 3 seconds
-North–South Lights: Green OFF, Yellow OFF, Red ON
-East–West Lights:   Green OFF, Yellow ON, Red OFF
-
-✔ Extension Logic (Vehicle/Pedestrian Request)
-
-When the input extension is high during NS Green, the NS green phase extends by 5 additional seconds.
-
-✔ 1-Second Tick Generator
-
-A frequency divider converts a fast clock (e.g., 100 MHz FPGA clock) into a clean 1 Hz tick, used by the traffic controller.
-
-✔ VCD Waveform Generation
-
-The testbench automatically writes traffic.vcd for viewing in GTKWave.
+A tick is generated periodically by the tick1s module (default: every 50 clock cycles).
 
 
-🧠 Design Overview
-1️⃣ Tick Generator (tick1s.v)
 
-Takes a fast clock (e.g., 100 MHz) and produces a 1 Hz pulse.
+### Manual Extension Feature
 
-localparam maxval = 100000000 - 1;  // Divide 100 MHz to 1 Hz
+The traffic controller includes an extension input:
 
+When the user sets extension = 1 during the NS green phase,
 
-Whenever the counter hits maxval, the module sets tick = 1 for one cycle.
+The NS green time (t1) is increased by 5 additional ticks.
 
-2️⃣ Traffic Controller (traffic.v)
+The remaining timings (t2, t3) automatically adjust to maintain proper sequence.
 
-Implements the traffic light logic using:
+This simulates a manual override or a pedestrian request button that extends NS time based on user choice, not sensor feedback.
 
-A 5-bit counter
+### Simulation Details
+Running the simulation:
 
-Four timing thresholds (t1, t2, t3)
+```bash
+iverilog -o sim.out traffic.v tick1s.v tb_traffic.v
 
-Optional green-light extension
-
-The controller updates only on each tick, not every clock cycle.
-
-State behavior is implemented using if-blocks (non-FSM approach), but still synthesizable.
-
-3️⃣ Testbench (tb_traffic.v)
-
-The testbench:
-
-Generates a 10 ns clock
-
-Resets the system
-
-Waits several ticks
-
-Activates extension
-
-Dumps waveforms via:
-
-$dumpfile("traffic.vcd");
-$dumpvars(0, tb_traffic);
-
-
-You can view the waveform in GTKWave.
-
-▶️ Running the Simulation
-Step 1 — Compile
-iverilog -o sim.out tick1s.v traffic.v tb_traffic.v
-
-Step 2 — Run
 vvp sim.out
-
-Step 3 — View waveforms
-
-If on Linux/WSL:
 
 gtkwave traffic.vcd
 
+```
+Testbench behavior
 
-If using Windows GTKWave:
-Open → traffic.vcd
+The testbench performs: Reset for initial setup Waits for 5 ticks. Applies a manual extension pulse for one tick. Observes extended NS green time. Runs additional cycles and finishes
 
-You'll see signals for:
+This verifies both normal operation and manual override behavior.
 
-ns_green, ns_yellow, ns_red
+### Expected Waveforms
 
-ew_green, ew_yellow, ew_red
+You can expect to observe:
 
-tick
+Regular tick pulses
 
-counter
+Internal counter incrementing
 
-🧪 Simulation Notes
+Light outputs (ns_green, ns_yellow, ns_red, etc.)
 
-The real tick divider (100M cycles) is large; for simulation you may reduce maxval to speed up the run.
+Manual extension operation extending the NS green phase
 
-All outputs are initialized to avoid X states.
+### Key Learning Outcomes
 
-The testbench includes an example extension request.
+✔ Designing sequential logic using counters
 
-🚀 Possible Extensions (Future Work)
+✔ Handling user-driven extension inputs
 
-Convert design to a proper FSM (Moore or Mealy).
+✔ Writing modular Verilog (separate tick generator + controller)
 
-Add pedestrian crossing system (walk/stop indicators).
+✔ Building event-driven testbenches using @(posedge tick)
 
-Add vehicle sensors for adaptive timing.
+✔ Debugging waveforms using GTKWave
 
-Implement a 4-way intersection.
+✔ Understanding timing-based state transitions
 
-Port to FPGA (Basys 3 / Arty A7).
 
-📜 License
+### How to Modify Timings
 
-This project is entirely for learning and academic purposes.
-Feel free to modify and use in your personal VLSI/digital design journey.
+Inside traffic.v:
+
+```bash
+reg [4:0] t1 = 10;  // NS Green
+
+reg [4:0] t2 = 13;  // NS Green + Yellow
+
+reg [4:0] t3 = 23;  // NS+EW combined duration
+```
+
+Change these values to customize durations.
+
+### License
+
+This project is intended only for academic and learning purposes.
+No commercial use is intended.
