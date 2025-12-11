@@ -11,6 +11,15 @@ module traffic(
     output reg ew_red
 );
 
+initial begin
+    ns_green = 1;
+    ns_yellow = 0;
+    ns_red = 0;
+    ew_green = 0;
+    ew_red = 1;
+    ew_yellow = 0;
+end
+
 reg [4:0] counter;
 initial counter = 1;
 reg [4:0] t1 = 10;
@@ -74,4 +83,6 @@ always @(posedge clk or posedge reset) begin
             t3<=23;
         end
     end
+
 end
+endmodule

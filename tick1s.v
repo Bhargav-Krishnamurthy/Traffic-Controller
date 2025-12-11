@@ -2,10 +2,9 @@ module tick1s(
     input wire clk,
     input wire reset,
     output reg tick
-
 );
 reg [27:0] counter = 0;
-localparam maxval = 100000000 - 1;
+localparam maxval = 50 - 1;
 always @(posedge clk or posedge reset) begin
     if(reset) begin
         counter <= 0;
